@@ -234,7 +234,7 @@
         <textarea id="markdown-input" placeholder="Write your Markdown here..."></textarea>
         
         <!-- Controls -->
-        <div class="controls">
+        <div class="controls" style="flex-direction: column; gap: 0.5rem;">
           <button id="print-button" onclick="handlePrint()">
             <svg class="icon" viewBox="0 0 24 24">
               <rect x="6" y="3" width="12" height="6" rx="2" />
@@ -244,6 +244,16 @@
               <line x1="8" y1="19" x2="16" y2="19" />
             </svg>
             Print
+          </button>
+          <button id="export-docx" onclick="exportToDocx()">
+            <svg class="icon" viewBox="0 0 24 24">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <line x1="10" y1="9" x2="8" y2="9"></line>
+            </svg>
+            Export DOCX
           </button>
         </div>
         <div class="color-controls">
@@ -258,6 +268,10 @@
           <div class="color-picker">
             <label>Header Color:</label>
             <input type="color" id="header-color" value="#5E2D79" onchange="updateColors()">
+          </div>
+          <div class="color-picker">
+            <label>Text Size:</label>
+            <input type="number" id="text-size" value="16" min="8" max="32" onchange="updateTextSize()" style="width: 60px; padding: 2px 5px; border-radius: 4px; border: 1px solid #ccc;">
           </div>
         </div>
       </div>
@@ -314,6 +328,7 @@
                 color: ${document.getElementById('text-color').value || '#333'};
                 padding: 40px;
                 line-height: 1.5;
+                font-size: ${document.getElementById('text-size').value}px;
               }
               table {
                 border-collapse: collapse;
@@ -400,6 +415,51 @@
       if (previewDocument && previewDocument.body) {
         previewDocument.body.style.direction = dir;
         previewDocument.body.style.textAlign = dir === 'rtl' ? 'right' : 'left';
+      }
+    }
+
+    function updateTextSize() {
+      const textSize = document.getElementById('text-size').value;
+      updatePreview();
+    }
+
+    async function exportToDocx() {
+      try {
+        const button = document.getElementById('export-docx');
+        button.disabled = true;
+        
+        // Get the styled HTML content
+        const content = previewFrame.contentDocument.getElementById('content');
+        const styledHTML = `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="UTF-8">
+              <style>
+                body { font-family: Arial, sans-serif; }
+                h1, h2, h3 { color: ${document.getElementById('header-color').value}; }
+                strong { color: ${document.getElementById('bold-color').value}; }
+              </style>
+            </head>
+            <body>${content.innerHTML}</body>
+          </html>
+        `;
+        
+        // Create downloadable file
+        const blob = new Blob([styledHTML], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'document.docx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error('Error exporting to DOCX:', error);
+        alert('Error exporting to DOCX. Please try again.');
+      } finally {
+        button.disabled = false;
       }
     }
   </script>
